@@ -1,4 +1,8 @@
-import config from './config.js'
+import {
+  activities as allActivities,
+  restaurants as allRestaurants,
+  whatsappNumber,
+} from './config.js'
 
 /** Items are matched by name, so reordering config.js does not lose picks. */
 export function pickedItems(order, all) {
@@ -11,19 +15,19 @@ export function pickedItems(order, all) {
  * The plain text version she copies or sends over WhatsApp.
  */
 export function buildSummaryText(answers) {
-  const vibes = pickedItems(answers.vibeOrder, config.vibes)
-  const restaurants = pickedItems(answers.restaurantOrder, config.restaurants)
+  const activities = pickedItems(answers.activityOrder, allActivities)
+  const restaurants = pickedItems(answers.restaurantOrder, allRestaurants)
 
   const lines = ['Thursday, sorted. Here is what she picked.', '']
 
-  if (vibes.length) {
-    lines.push('Vibe, in her order:')
-    vibes.forEach((vibe, index) => lines.push(`${index + 1}. ${vibe.name}`))
+  if (activities.length) {
+    lines.push('Doing, in her order:')
+    activities.forEach((item, index) => lines.push(`${index + 1}. ${item.name}`))
     lines.push('')
   }
 
   if (restaurants.length) {
-    lines.push('Restaurants, in her order:')
+    lines.push('Eating, in her order:')
     restaurants.forEach((place, index) =>
       lines.push(
         `${index + 1}. ${place.name}${place.area ? ` (${place.area})` : ''}`,
@@ -50,11 +54,21 @@ export function jokeLine(noCount) {
   return `Bonus: ${noCount} presses of "Absolutely not" before the yes. The button got quite big.`
 }
 
+/**
+ * True only for a number that could actually receive a message. A left over
+ * placeholder like "27XXXXXXXXX" would otherwise strip down to "27" and
+ * produce a dead wa.me link, so it counts as not set.
+ */
+export function hasRealNumber() {
+  const raw = whatsappNumber || ''
+  if (/[a-z]/i.test(raw)) return false
+  return raw.replace(/\D/g, '').length >= 8
+}
+
 export function whatsAppLink(text) {
-  const digits = (config.myWhatsAppNumber || '').replace(/\D/g, '')
   const message = encodeURIComponent(text)
-  return digits
-    ? `https://wa.me/${digits}?text=${message}`
+  return hasRealNumber()
+    ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${message}`
     : `https://wa.me/?text=${message}`
 }
 

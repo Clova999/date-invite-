@@ -1,7 +1,17 @@
 import { useState } from 'react'
 import { ArrowLeft, Check, Copy, Pencil, Send } from 'lucide-react'
-import config from '../config.js'
-import { buildSummaryText, copyText, jokeLine, pickedItems, whatsAppLink } from '../summary.js'
+import {
+  activities as allActivities,
+  restaurants as allRestaurants,
+} from '../config.js'
+import {
+  buildSummaryText,
+  copyText,
+  hasRealNumber,
+  jokeLine,
+  pickedItems,
+  whatsAppLink,
+} from '../summary.js'
 import { hasMedia, mediaUrl } from './MediaBanner.jsx'
 import Shell, { PrimaryButton, QuietButton } from './Shell.jsx'
 
@@ -17,8 +27,8 @@ export default function SummaryScreen({
   const [sent, setSent] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const vibes = pickedItems(answers.vibeOrder, config.vibes)
-  const restaurants = pickedItems(answers.restaurantOrder, config.restaurants)
+  const activities = pickedItems(answers.activityOrder, allActivities)
+  const restaurants = pickedItems(answers.restaurantOrder, allRestaurants)
   const text = buildSummaryText(answers)
 
   const handleCopy = async () => {
@@ -66,7 +76,9 @@ export default function SummaryScreen({
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-ink-soft">
         {sent
-          ? 'Copy it, or open WhatsApp with the message already written.'
+          ? hasRealNumber()
+            ? 'Copy it, or open WhatsApp with the message already written.'
+            : 'Copy it, or open WhatsApp with the message already written and pick my chat.'
           : 'Have a read. Change anything you like before it comes to me.'}
       </p>
 
@@ -91,9 +103,9 @@ export default function SummaryScreen({
       ) : (
         <div className="mt-5 flex flex-col gap-4">
           <RecapSection
-            title="The vibe"
-            items={vibes}
-            onEdit={() => onEdit('vibes')}
+            title="What we do"
+            items={activities}
+            onEdit={() => onEdit('activities')}
           />
           <RecapSection
             title="Where we eat"

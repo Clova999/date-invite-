@@ -3,7 +3,7 @@ import ChoiceCard from './ChoiceCard.jsx'
 import Shell, { PrimaryButton, QuietButton } from './Shell.jsx'
 
 /**
- * One screen of selectable, rankable cards. Used for both the vibe step and
+ * One screen of selectable, rankable cards. Used for both the activity step and
  * the restaurant step, and it renders whatever the config array holds.
  */
 export default function PickStep({

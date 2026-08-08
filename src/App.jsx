@@ -1,22 +1,22 @@
 import { useCallback } from 'react'
-import config from './config.js'
+import { activities, restaurants } from './config.js'
 import { usePersistentState } from './hooks.js'
 import AskScreen from './components/AskScreen.jsx'
 import WelcomeScreen from './components/WelcomeScreen.jsx'
 import PickStep from './components/PickStep.jsx'
 import SummaryScreen from './components/SummaryScreen.jsx'
 
-const STORAGE_KEY = 'date-invite.v1'
+const STORAGE_KEY = 'date-invite.v2'
 
 // The ask screen is deliberately outside this list, so no progress rail shows
 // while she is being teased by a growing button.
-const STEPS = ['welcome', 'vibes', 'restaurants', 'summary']
+const STEPS = ['welcome', 'activities', 'restaurants', 'summary']
 
 const INITIAL = {
   step: 'ask',
   saidYes: false,
   noCount: 0,
-  vibeOrder: [], // names, in the order she ranked them
+  activityOrder: [], // names, in the order she ranked them
   restaurantOrder: [],
   note: '',
 }
@@ -78,22 +78,22 @@ export default function App() {
       <WelcomeScreen
         steps={STEPS}
         currentIndex={currentIndex}
-        onStart={() => goTo('vibes')}
+        onStart={() => goTo('activities')}
       />
     )
   }
 
-  if (step === 'vibes') {
+  if (step === 'activities') {
     return (
       <PickStep
         steps={STEPS}
         currentIndex={currentIndex}
-        title="What kind of night?"
+        title="What are we doing?"
         intro="Pick as many as you fancy. The first one you tap becomes number one, and you can reshuffle them after."
-        items={config.vibes}
-        order={answers.vibeOrder}
-        onToggle={(name) => toggle('vibeOrder', name)}
-        onMove={(name, direction) => move('vibeOrder', name, direction)}
+        items={activities}
+        order={answers.activityOrder}
+        onToggle={(name) => toggle('activityOrder', name)}
+        onMove={(name, direction) => move('activityOrder', name, direction)}
         onBack={() => goTo('welcome')}
         onContinue={() => goTo('restaurants')}
       />
@@ -106,12 +106,12 @@ export default function App() {
         steps={STEPS}
         currentIndex={currentIndex}
         title="Where are we eating?"
-        intro="Choose your top ones and put them in the order you want them. I will book from the top down."
-        items={config.restaurants}
+        intro="Same again. Rank your favourites and I will work from the top down."
+        items={restaurants}
         order={answers.restaurantOrder}
         onToggle={(name) => toggle('restaurantOrder', name)}
         onMove={(name, direction) => move('restaurantOrder', name, direction)}
-        onBack={() => goTo('vibes')}
+        onBack={() => goTo('activities')}
         onContinue={() => goTo('summary')}
         continueLabel="See the plan"
       />
@@ -129,10 +129,10 @@ export default function App() {
       // Clears the picks only. Saying yes is not something she has to redo.
       onReset={() =>
         patch({
-          vibeOrder: [],
+          activityOrder: [],
           restaurantOrder: [],
           note: '',
-          step: 'vibes',
+          step: 'activities',
         })
       }
     />

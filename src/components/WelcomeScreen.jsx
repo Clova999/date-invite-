@@ -1,5 +1,5 @@
 import { Heart } from 'lucide-react'
-import config from '../config.js'
+import { welcomeIntro } from '../config.js'
 import Shell, { PrimaryButton } from './Shell.jsx'
 
 export default function WelcomeScreen({ steps, currentIndex, onStart }) {
@@ -19,11 +19,11 @@ export default function WelcomeScreen({ steps, currentIndex, onStart }) {
         </h1>
 
         <p className="mt-4 text-base leading-relaxed text-ink-soft">
-          {config.welcomeIntro}
+          {welcomeIntro}
         </p>
 
         <p className="mt-8 rounded-2xl bg-white px-5 py-4 text-sm leading-relaxed text-ink-soft shadow-[0_6px_18px_-14px_rgba(44,33,28,0.6)]">
-          Two quick steps. Pick the vibe, pick where we eat, then send it
+          Two quick steps. Pick what we do, pick what we eat, then send it
           straight back to me.
         </p>
       </div>

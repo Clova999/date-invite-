@@ -18,23 +18,24 @@ GitHub Pages or any static host as is.
 
 ## Editing the content
 
-Everything she reads lives in **`src/config.js`**. You never need to touch a
-component.
+Everything she reads lives in **`src/config.js`**, as named exports. You never
+need to touch a component.
 
-| Field              | What it does                                                    |
-| ------------------ | --------------------------------------------------------------- |
-| `myWhatsAppNumber` | Where her picks get sent. Digits only with the country code, no plus sign and no spaces, for example `447700900123`. Leave it empty and WhatsApp opens with the message ready but lets her choose the chat. |
-| `askMedia`         | Optional image or GIF above the headline on the ask screen.      |
-| `askHeadline`      | The question itself.                                             |
-| `askSubline`       | Optional line under the headline. Set to `''` to hide it.        |
-| `askCaptions`      | Rotates one per press of "Absolutely not". Add as many as you like. |
-| `welcomeIntro`     | The short intro on the welcome screen.                           |
-| `vibes`            | Array of `{ name, description, media }`.                         |
-| `restaurants`      | Array of `{ name, area, description, media }`.                   |
+| Export           | What it does                                                     |
+| ---------------- | ---------------------------------------------------------------- |
+| `whatsappNumber` | Where her picks get sent. Digits only with the country code, no plus sign and no spaces, for example `27821234567`. While it still holds the `27XXXXXXXXX` placeholder the app treats it as unset and WhatsApp opens with the message ready but asks her which chat. |
+| `askMedia`       | Optional image or GIF above the headline on the ask screen.       |
+| `askHeadline`    | The question itself.                                              |
+| `askCaptions`    | Rotates one per press of "Absolutely not". Add as many as you like. |
+| `welcomeIntro`   | The short intro on the welcome screen.                            |
+| `activities`     | Array of `{ name, media, teaser }`. Only `name` is required.      |
+| `restaurants`    | Array of `{ name, media, teaser, area }`. Only `name` is required. |
 
-`vibes` and `restaurants` render at whatever length you leave them, so add a
-fourth vibe or a fifth restaurant and the screens just follow. Picks are stored
-by `name`, so renaming an entry after she has answered drops that one pick.
+Both arrays render at whatever length you leave them, so add a fifth activity
+or drop one and the screens just follow. `teaser` and `area` are optional on
+either list: leave them out and the card is just the picture and the name.
+Picks are stored by `name`, so renaming an entry after she has answered drops
+that one pick.
 
 ## Adding images and GIFs
 
@@ -43,11 +44,22 @@ by `name`, so renaming an entry after she has answered drops that one pick.
 
 ```js
 {
-  name: 'Golden hour rooftop',
-  description: 'Drinks up high while the light goes orange.',
-  media: 'sunset-rooftop.gif',
+  name: "Arcade",
+  media: "arcade.jpg",
+  teaser: "",
 }
 ```
+
+The current config expects these nine files in `public/media/`:
+
+```
+ask.gif            arcade.jpg     art-gallery.jpg   shooting-range.jpg
+mystery.jpg        date-night.jpg burgers.jpg       mexican.jpg
+korean.jpg
+```
+
+Any of them that are not there yet simply fall back to the text only card, so
+you can add them one at a time and the app keeps working throughout.
 
 Static images and animated GIFs both work, and so do `.mp4` and `.webm` files,
 which play muted and looped with no controls. Media loads lazily behind a soft
@@ -88,12 +100,12 @@ One accent colour drives the whole app. It lives at the top of
 
 ## Her answers
 
-Progress is kept in `localStorage` under `date-invite.v1`, so a refresh does not
+Progress is kept in `localStorage` under `date-invite.v2`, so a refresh does not
 wipe anything and the ask screen never replays once she has said yes. To reset
 everything for testing, clear that key in devtools or run:
 
 ```js
-localStorage.removeItem('date-invite.v1')
+localStorage.removeItem('date-invite.v2')
 ```
 
 ## What she sends back

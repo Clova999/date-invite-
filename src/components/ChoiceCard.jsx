@@ -3,7 +3,8 @@ import { Check, ChevronDown, ChevronUp } from 'lucide-react'
 import MediaBanner, { hasMedia } from './MediaBanner.jsx'
 
 /**
- * One selectable, rankable card. Works the same for a vibe and a restaurant.
+ * One selectable, rankable card. Works the same for an activity and a
+ * restaurant, and every field except name is optional.
  * With media it shows a banner, without media it falls back to a clean text
  * layout with an accent stripe.
  */
@@ -63,9 +64,9 @@ export default function ChoiceCard({
                 </span>
               )}
             </div>
-            {item.description && (
+            {item.teaser && (
               <p className="mt-1 text-sm leading-snug text-ink-soft">
-                {item.description}
+                {item.teaser}
               </p>
             )}
           </div>

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import config from '../config.js'
+import { askCaptions, askHeadline, askMedia } from '../config.js'
 import { useMeasuredSize, useReducedMotion, useViewportSize } from '../hooks.js'
 import MediaBanner, { hasMedia } from './MediaBanner.jsx'
 
@@ -92,8 +92,8 @@ export default function AskScreen({ presses, onYes, onNo }) {
     : 'transform 560ms var(--ease-spring), width 400ms var(--ease-spring), height 400ms var(--ease-spring), font-size 400ms ease'
 
   const caption =
-    presses > 0 && config.askCaptions.length > 0
-      ? config.askCaptions[(presses - 1) % config.askCaptions.length]
+    presses > 0 && askCaptions.length > 0
+      ? askCaptions[(presses - 1) % askCaptions.length]
       : null
 
   return (
@@ -101,22 +101,17 @@ export default function AskScreen({ presses, onYes, onNo }) {
       {/* The header gives up room before anything else does, so the Yes
           button always has space to grow, even on a short landscape phone. */}
       <header className="flex min-h-0 shrink flex-col items-center gap-4 overflow-hidden px-6 pt-8">
-        {hasMedia(config.askMedia) && (
+        {hasMedia(askMedia) && (
           <div
             className="w-full max-w-[17rem] min-h-0 shrink [@media(max-height:520px)]:hidden"
             style={{ flexBasis: '24dvh' }}
           >
-            <MediaBanner file={config.askMedia} alt="" fill />
+            <MediaBanner file={askMedia} alt="" fill />
           </div>
         )}
         <h1 className="max-w-md shrink-0 text-center text-[clamp(1.4rem,6vw,2rem)] leading-tight font-semibold text-balance text-ink">
-          {config.askHeadline}
+          {askHeadline}
         </h1>
-        {config.askSubline && (
-          <p className="max-w-xs shrink-0 text-center text-sm leading-relaxed text-balance text-ink-soft [@media(max-height:440px)]:hidden">
-            {config.askSubline}
-          </p>
-        )}
       </header>
 
       {/* The stage holds the Yes button and nothing else, so the button can
