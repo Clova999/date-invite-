@@ -8,7 +8,7 @@
 export const askHeadline =
   "Will you go on a date with me this Thursday?";
 
-export const askMedia = "ask.gif";
+export const askMedia = "ask.jpg";
 
 export const askCaptions = [
   "are you sure?",
