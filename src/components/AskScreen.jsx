@@ -1,6 +1,12 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { askCaptions, askHeadline, askMedia } from '../config.js'
-import { useMeasuredSize, useReducedMotion, useViewportSize } from '../hooks.js'
+import { isSafe, pickSpot } from '../dodge.js'
+import {
+  useFinePointer,
+  useMeasuredRect,
+  useReducedMotion,
+  useViewportSize,
+} from '../hooks.js'
 import MediaBanner, { hasMedia } from './MediaBanner.jsx'
 
 // Natural, unscaled geometry of the two buttons, in CSS pixels.
@@ -31,9 +37,10 @@ const lerp = (from, to, t) => from + (to - from) * t
 
 export default function AskScreen({ presses, onYes, onNo }) {
   const reducedMotion = useReducedMotion()
+  const finePointer = useFinePointer()
   const viewport = useViewportSize()
-  const [stageRef, stage] = useMeasuredSize()
-  const [dockRef, dock] = useMeasuredSize()
+  const [stageRef, stage] = useMeasuredRect()
+  const [dockRef, dock] = useMeasuredRect()
 
   // The Yes button may never exceed 85 percent of viewport width or 55
   // percent of viewport height, whichever limit is reached first. It is also
@@ -66,26 +73,99 @@ export default function AskScreen({ presses, onYes, onNo }) {
   const noHeight = Math.max(NO_FLOOR, NO_BASE_H * Math.pow(SHRINK, presses))
   const noFontSize = Math.max(NO_MIN_FONT, NO_BASE_FONT * Math.pow(SHRINK, presses))
 
+  // Once growth is capped the joke carries on by other means: the small
+  // button starts dodging instead.
+  const dodging = presses > 0 && Math.pow(GROWTH, presses) >= maxScale
+
+  // Where the Yes button actually sits on screen, which is what the dodge
+  // has to steer around.
+  const yesBounds = useMemo(() => {
+    const centreX = (stage ? stage.x + stage.width / 2 : viewport.width / 2) + yesShiftX
+    const centreY = stage ? stage.y + stage.height / 2 : viewport.height / 2
+    const halfW = (YES_BASE_W * scale) / 2
+    const halfH = (YES_BASE_H * scale) / 2
+    return {
+      left: centreX - halfW,
+      right: centreX + halfW,
+      top: centreY - halfH,
+      bottom: centreY + halfH,
+    }
+  }, [stage, viewport, yesShiftX, scale])
+
+  const [dodgeSpot, setDodgeSpot] = useState(null)
+
+  const spotOptions = useMemo(
+    () => ({ viewport, yes: yesBounds, width: noWidth, height: noHeight }),
+    [viewport, yesBounds, noWidth, noHeight],
+  )
+
+  // Held in a ref so the handlers below always see current geometry without
+  // making every resize re-roll the position.
+  const optionsRef = useRef(spotOptions)
+  optionsRef.current = spotOptions
+
+  const dodge = useCallback(() => {
+    setDodgeSpot((previous) => pickSpot(optionsRef.current, previous))
+  }, [])
+
+  // A new spot on every press once dodging has begun.
+  useEffect(() => {
+    if (!dodging) {
+      setDodgeSpot(null)
+      return
+    }
+    dodge()
+  }, [dodging, presses, dodge])
+
+  // A resize or rotation can leave the button under the Yes button or half
+  // off screen. Only re-roll when that has actually happened.
+  useEffect(() => {
+    if (!dodging) return
+    setDodgeSpot((previous) =>
+      isSafe(previous, spotOptions) ? previous : pickSpot(spotOptions, previous),
+    )
+  }, [dodging, spotOptions])
+
   // Drift: from press one onward the small button sits in the dock and edges
   // a little further towards the corner on every press. Reduced motion keeps
   // it parked where it lands.
   const driftT = reducedMotion ? 0 : 1 - Math.pow(0.7, Math.max(0, presses - 1))
-  const noOffset = useMemo(() => {
+
+  // Everything below is the centre of the small button, in viewport pixels.
+  const noCentre = useMemo(() => {
+    const stageCx = stage ? stage.x + stage.width / 2 : viewport.width / 2
+    const stageCy = stage ? stage.y + stage.height / 2 : viewport.height / 2
+
     if (paired) {
       // Beside the Yes button, level with the middle of the stage.
-      return {
-        x: (YES_BASE_W + PAIR_GAP) / 2,
-        y: stage ? -stage.height / 2 : -120,
-      }
+      return { x: stageCx + (YES_BASE_W + PAIR_GAP) / 2, y: stageCy }
     }
-    const halfW = dock ? dock.width / 2 : 180
-    const zoneTop = CAPTION_ZONE + noHeight / 2
-    const zoneBottom = (dock ? dock.height : 160) - DOCK_MARGIN - noHeight / 2
+
+    if (dodging && dodgeSpot) return dodgeSpot
+
+    if (!dock) return { x: stageCx, y: stageCy }
+
+    const zoneTop = dock.y + CAPTION_ZONE + noHeight / 2
+    const zoneBottom = dock.y + dock.height - DOCK_MARGIN - noHeight / 2
     return {
-      x: lerp(0, Math.max(0, halfW - DOCK_MARGIN - noWidth / 2), driftT),
+      x: lerp(
+        dock.x + dock.width / 2,
+        dock.x + dock.width - DOCK_MARGIN - noWidth / 2,
+        driftT,
+      ),
       y: lerp(zoneTop, Math.max(zoneTop, zoneBottom), driftT),
     }
-  }, [paired, stage, dock, driftT, noWidth, noHeight])
+  }, [
+    paired,
+    dodging,
+    dodgeSpot,
+    stage,
+    dock,
+    viewport,
+    driftT,
+    noWidth,
+    noHeight,
+  ])
 
   const springy = reducedMotion
     ? 'none'
@@ -146,25 +226,30 @@ export default function AskScreen({ presses, onYes, onNo }) {
           {caption ?? ' '}
         </p>
 
-        <button
-          type="button"
-          onClick={onNo}
-          aria-label="Absolutely not"
-          title="Absolutely not"
-          style={{
-            width: noWidth,
-            height: noHeight,
-            fontSize: noFontSize,
-            transform: `translate(-50%, -50%) translate(${noOffset.x}px, ${noOffset.y}px)`,
-            transition: springy,
-          }}
-          className="absolute top-0 left-1/2 z-10 cursor-pointer overflow-hidden rounded-full border-2 border-accent/30 bg-white px-2 font-semibold text-ink-soft whitespace-nowrap active:brightness-95"
-        >
-          <span className="block overflow-hidden text-ellipsis">
-            Absolutely not
-          </span>
-        </button>
       </div>
+
+      {/* Positioned against the viewport rather than any container, so once
+          it starts dodging it can use the whole screen. The z-index keeps it
+          tappable wherever it lands. */}
+      <button
+        type="button"
+        onClick={onNo}
+        onMouseEnter={dodging && finePointer ? dodge : undefined}
+        aria-label="Absolutely not"
+        title="Absolutely not"
+        style={{
+          width: noWidth,
+          height: noHeight,
+          fontSize: noFontSize,
+          transform: `translate(${noCentre.x - noWidth / 2}px, ${noCentre.y - noHeight / 2}px)`,
+          transition: stage ? springy : 'none',
+        }}
+        className="fixed top-0 left-0 z-30 cursor-pointer overflow-hidden rounded-full border-2 border-accent/30 bg-white px-2 font-semibold text-ink-soft whitespace-nowrap active:brightness-95"
+      >
+        <span className="block overflow-hidden text-ellipsis">
+          Absolutely not
+        </span>
+      </button>
     </div>
   )
 }

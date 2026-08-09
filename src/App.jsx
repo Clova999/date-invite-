@@ -6,7 +6,7 @@ import WelcomeScreen from './components/WelcomeScreen.jsx'
 import PickStep from './components/PickStep.jsx'
 import SummaryScreen from './components/SummaryScreen.jsx'
 
-const STORAGE_KEY = 'date-invite.v2'
+export const STORAGE_KEY = 'date-invite.v2'
 
 // The ask screen is deliberately outside this list, so no progress rail shows
 // while she is being teased by a growing button.

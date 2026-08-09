@@ -95,18 +95,30 @@ One accent colour drives the whole app. It lives at the top of
 - The Yes label grows with the button but stops at 40px so it stays readable.
 - "Absolutely not" shrinks by 0.85 per press with a hard floor of 44 by 44 CSS
   pixels, and drifts towards the corner. It stays tappable forever.
-- With `prefers-reduced-motion` set, the button still grows but without the
-  bounce or the drift.
+- Once the Yes button hits its cap and stops growing, "Absolutely not" starts
+  dodging instead: every further press throws it to a random spot. The spot is
+  always at least 16px inside every screen edge and at least 16px clear of the
+  Yes button, so it never lands underneath it or half off screen. On a mouse or
+  trackpad it also dodges when you hover it, so catching it takes some doing.
+  It is a real button throughout, so Tab and Enter always reach it.
+- With `prefers-reduced-motion` set, the button still grows and still dodges to
+  the new spot, but without the bounce or the drift animation.
 
 ## Her answers
 
 Progress is kept in `localStorage` under `date-invite.v2`, so a refresh does not
-wipe anything and the ask screen never replays once she has said yes. To reset
-everything for testing, clear that key in devtools or run:
+wipe anything and the ask screen never replays once she has said yes.
 
-```js
-localStorage.removeItem('date-invite.v2')
+To start over while testing, load the app with `?reset` on the end of the URL:
+
 ```
+https://your-app.vercel.app/?reset
+```
+
+That wipes her saved answers before anything renders and drops you back on the
+ask screen. The parameter is then removed from the address bar, so refreshing
+afterwards behaves like a normal visit rather than resetting again. There is no
+reset button anywhere in the interface, so she will never stumble into it.
 
 ## What she sends back
 

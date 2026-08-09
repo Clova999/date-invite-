@@ -35,24 +35,38 @@ export function usePersistentState(key, initialValue) {
   return [value, setValue, reset]
 }
 
-/**
- * True when the person has asked their device to keep motion to a minimum.
- */
-export function useReducedMotion() {
-  const [reduced, setReduced] = useState(() => {
+/** Live result of a CSS media query. */
+export function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return false
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    return window.matchMedia(query).matches
   })
 
   useEffect(() => {
     if (!window.matchMedia) return
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const onChange = (event) => setReduced(event.matches)
-    query.addEventListener('change', onChange)
-    return () => query.removeEventListener('change', onChange)
-  }, [])
+    const list = window.matchMedia(query)
+    const onChange = (event) => setMatches(event.matches)
+    setMatches(list.matches)
+    list.addEventListener('change', onChange)
+    return () => list.removeEventListener('change', onChange)
+  }, [query])
 
-  return reduced
+  return matches
+}
+
+/**
+ * True when the person has asked their device to keep motion to a minimum.
+ */
+export function useReducedMotion() {
+  return useMediaQuery('(prefers-reduced-motion: reduce)')
+}
+
+/**
+ * True for a mouse or trackpad. False for touch, where hover does not exist
+ * and a dodge on hover would fire on the tap itself.
+ */
+export function useFinePointer() {
+  return useMediaQuery('(pointer: fine)')
 }
 
 /**
@@ -94,34 +108,57 @@ function readViewport() {
 }
 
 /**
- * Measures an element once it exists and again whenever it resizes.
- * Used to learn the natural, unscaled size of the Yes button.
+ * Position and size of an element in viewport coordinates, remeasured
+ * whenever it resizes or the window changes. Viewport space is what the
+ * ask screen needs, because the dodging button is positioned against the
+ * whole screen rather than against any one container.
  */
-export function useMeasuredSize() {
-  const [size, setSize] = useState(null)
+export function useMeasuredRect() {
+  const [rect, setRect] = useState(null)
   const nodeRef = useRef(null)
   const observerRef = useRef(null)
 
-  const ref = useCallback((node) => {
-    observerRef.current?.disconnect()
-    nodeRef.current = node
+  const measure = useCallback(() => {
+    const node = nodeRef.current
     if (!node) return
-
-    const measure = () => {
-      // Sub pixel accurate, which keeps the two ask screen buttons on exactly
-      // the same centre line before the first press.
-      const rect = node.getBoundingClientRect()
-      setSize({ width: rect.width, height: rect.height })
-    }
-    measure()
-
-    if (typeof ResizeObserver !== 'undefined') {
-      observerRef.current = new ResizeObserver(measure)
-      observerRef.current.observe(node)
-    }
+    // Sub pixel accurate, which keeps the two ask screen buttons on exactly
+    // the same centre line before the first press.
+    const box = node.getBoundingClientRect()
+    setRect((prev) =>
+      prev &&
+      prev.x === box.x &&
+      prev.y === box.y &&
+      prev.width === box.width &&
+      prev.height === box.height
+        ? prev
+        : { x: box.x, y: box.y, width: box.width, height: box.height },
+    )
   }, [])
 
-  useEffect(() => () => observerRef.current?.disconnect(), [])
+  const ref = useCallback(
+    (node) => {
+      observerRef.current?.disconnect()
+      nodeRef.current = node
+      if (!node) return
+      measure()
+      if (typeof ResizeObserver !== 'undefined') {
+        observerRef.current = new ResizeObserver(measure)
+        observerRef.current.observe(node)
+      }
+    },
+    [measure],
+  )
 
-  return [ref, size]
+  useEffect(() => {
+    // A resize can move an element without changing its own size.
+    window.addEventListener('resize', measure)
+    window.addEventListener('orientationchange', measure)
+    return () => {
+      observerRef.current?.disconnect()
+      window.removeEventListener('resize', measure)
+      window.removeEventListener('orientationchange', measure)
+    }
+  }, [measure])
+
+  return [ref, rect]
 }
